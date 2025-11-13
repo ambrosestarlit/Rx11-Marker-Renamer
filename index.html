@@ -43,10 +43,6 @@
             gap: 10px;
         }
 
-        .header h1 .icon {
-            filter: brightness(0) invert(1);
-        }
-
         .header p {
             opacity: 0.9;
             font-size: 14px;
@@ -303,7 +299,7 @@
     <div class="container">
         <div class="header">
             <h1>
-                <span class="icon">🎵</span> Marker＊Renamer
+                🎵 Marker＊Renamer
             </h1>
             <p>iZotope RX11のマーカー名を一括で置換します</p>
         </div>
@@ -407,43 +403,86 @@ Bメロ1
     </div>
 
     <script>
+        // 初期化時にイベントリスナーを設定
+        document.addEventListener('DOMContentLoaded', function() {
+            // テキストエリアの入力監視
+            const inputTextArea = document.getElementById('inputText');
+            const replacementNamesArea = document.getElementById('replacementNames');
+            
+            if (inputTextArea) {
+                inputTextArea.addEventListener('input', updateStats);
+            }
+            
+            if (replacementNamesArea) {
+                replacementNamesArea.addEventListener('input', updateStats);
+            }
+            
+            // ファイル読み込み
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            document.getElementById('inputText').value = event.target.result;
+                            updateStats();
+                            showNotification('ファイルを読み込みました', 'success');
+                        };
+                        reader.readAsText(file);
+                    }
+                });
+            }
+            
+            // 初期化
+            updateStats();
+        });
+
         // 統計情報を更新
         function updateStats() {
-            const inputText = document.getElementById('inputText').value;
-            const replacementNames = document.getElementById('replacementNames').value;
+            const inputTextElement = document.getElementById('inputText');
+            const replacementNamesElement = document.getElementById('replacementNames');
             
+            if (!inputTextElement || !replacementNamesElement) {
+                console.error('要素が見つかりません');
+                return;
+            }
+            
+            const inputText = inputTextElement.value;
+            const replacementNames = replacementNamesElement.value;
+            
+            // マーカー数をカウント
             const markerCount = countMarkers(inputText);
-            const nameLines = replacementNames.split('\n');
-            const nameCount = nameLines.filter(line => line.trim().length > 0).length;
             
-            document.getElementById('inputMarkerCount').textContent = markerCount;
-            document.getElementById('nameCount').textContent = nameCount;
+            // 置換名数をカウント（空行を除外）
+            let nameCount = 0;
+            if (replacementNames && replacementNames.trim()) {
+                const lines = replacementNames.split('\n');
+                nameCount = lines.filter(line => line.trim().length > 0).length;
+            }
+            
+            // 表示を更新
+            const markerCountElement = document.getElementById('inputMarkerCount');
+            const nameCountElement = document.getElementById('nameCount');
+            
+            if (markerCountElement) {
+                markerCountElement.textContent = markerCount;
+            }
+            
+            if (nameCountElement) {
+                nameCountElement.textContent = nameCount;
+            }
         }
 
         // マーカー数をカウント
         function countMarkers(text) {
+            if (!text) return 0;
+            
+            // RX11のマーカー形式にマッチする正規表現
             const markerPattern = /^Marker\s+\d+\s+\d{2}:\d{2}:\d{2}\.\d+/gm;
             const matches = text.match(markerPattern);
             return matches ? matches.length : 0;
         }
-
-        // ファイル読み込み
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('inputText').value = e.target.result;
-                    updateStats();
-                    showNotification('ファイルを読み込みました', 'success');
-                };
-                reader.readAsText(file);
-            }
-        });
-
-        // テキストエリアの入力監視
-        document.getElementById('inputText').addEventListener('input', updateStats);
-        document.getElementById('replacementNames').addEventListener('input', updateStats);
 
         // マーカー処理
         function processMarkers() {
@@ -460,7 +499,7 @@ Bメロ1
                 return;
             }
 
-            // 置換名リストを配列に変換
+            // 置換名リストを配列に変換（空行を除外）
             const nameList = replacementNames.split('\n').filter(line => line.trim().length > 0);
             
             // 入力テキストを行ごとに処理
@@ -468,7 +507,7 @@ Bメロ1
             const result = [];
             let nameIndex = 0;
             
-            // マーカー行のパターン
+            // マーカー行のパターン（C#版と同じ）
             const markerPattern = /^(Marker\s+\d+)(\s+\d{2}:\d{2}:\d{2}\.\d+.*)$/;
 
             lines.forEach(line => {
@@ -483,17 +522,20 @@ Bメロ1
                 }
             });
 
+            // 結果を表示
             document.getElementById('outputText').value = result.join('\n');
             document.getElementById('processedCount').textContent = nameIndex;
 
             // 結果の通知
             const totalMarkers = countMarkers(inputText);
-            if (nameIndex === totalMarkers) {
+            if (nameIndex === totalMarkers && totalMarkers > 0) {
                 showNotification(`すべてのマーカー（${nameIndex}個）を置換しました`, 'success');
             } else if (nameIndex < totalMarkers) {
                 showNotification(`${nameIndex}個のマーカーを置換しました（残り${totalMarkers - nameIndex}個は変更なし）`, 'warning');
-            } else {
+            } else if (nameIndex > 0) {
                 showNotification(`${nameIndex}個のマーカーを置換しました`, 'success');
+            } else {
+                showNotification('マーカーが見つかりませんでした', 'error');
             }
         }
 
@@ -515,18 +557,37 @@ Bメロ1
                 return;
             }
 
-            navigator.clipboard.writeText(outputText).then(() => {
-                showNotification('クリップボードにコピーしました', 'success');
-            }).catch(() => {
-                // フォールバック
-                const textarea = document.createElement('textarea');
-                textarea.value = outputText;
-                document.body.appendChild(textarea);
-                textarea.select();
+            // モダンブラウザのClipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(outputText)
+                    .then(() => {
+                        showNotification('クリップボードにコピーしました', 'success');
+                    })
+                    .catch(() => {
+                        fallbackCopyToClipboard(outputText);
+                    });
+            } else {
+                fallbackCopyToClipboard(outputText);
+            }
+        }
+
+        // フォールバック用のクリップボードコピー
+        function fallbackCopyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
                 document.execCommand('copy');
-                document.body.removeChild(textarea);
                 showNotification('クリップボードにコピーしました', 'success');
-            });
+            } catch (err) {
+                showNotification('コピーに失敗しました', 'error');
+            } finally {
+                document.body.removeChild(textarea);
+            }
         }
 
         // ダウンロード
@@ -537,7 +598,14 @@ Bメロ1
                 return;
             }
 
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const now = new Date();
+            const timestamp = now.getFullYear() + 
+                              String(now.getMonth() + 1).padStart(2, '0') +
+                              String(now.getDate()).padStart(2, '0') + '_' +
+                              String(now.getHours()).padStart(2, '0') +
+                              String(now.getMinutes()).padStart(2, '0') +
+                              String(now.getSeconds()).padStart(2, '0');
+            
             const filename = `RX11_Markers_${timestamp}.txt`;
             
             const blob = new Blob([outputText], { type: 'text/plain;charset=utf-8' });
@@ -556,17 +624,16 @@ Bメロ1
         // 通知表示
         function showNotification(message, type = 'success') {
             const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${type}`;
-            notification.style.display = 'block';
-            
-            setTimeout(() => {
-                notification.style.display = 'none';
-            }, 3000);
+            if (notification) {
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.style.display = 'block';
+                
+                setTimeout(() => {
+                    notification.style.display = 'none';
+                }, 3000);
+            }
         }
-
-        // 初期化
-        updateStats();
     </script>
 </body>
 </html>
