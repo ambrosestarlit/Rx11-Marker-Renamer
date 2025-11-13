@@ -317,8 +317,9 @@
 例:
 Marker file version: 1
 Time format: Time
-Marker 1	00:00:03.00000000		
-Marker 2	00:00:07.00000000		
+  002	00:00:00.00000000		
+  004	00:00:06.12362500		
+  006	00:00:10.52975000		
 ..."></textarea>
                         <div class="help-text">
                             RX11でエクスポートしたマーカーファイル (.txt) の内容を入力します
@@ -478,8 +479,8 @@ Bメロ1
         function countMarkers(text) {
             if (!text) return 0;
             
-            // RX11のマーカー形式にマッチする正規表現
-            const markerPattern = /^Marker\s+\d+\s+\d{2}:\d{2}:\d{2}\.\d+/gm;
+            // RX11のマーカー形式（数字 + タイムコード）
+            const markerPattern = /^\s*\d+\s+\d{2}:\d{2}:\d{2}\.\d+/gm;
             const matches = text.match(markerPattern);
             return matches ? matches.length : 0;
         }
@@ -507,13 +508,14 @@ Bメロ1
             const result = [];
             let nameIndex = 0;
             
-            // マーカー行のパターン（C#版と同じ）
-            const markerPattern = /^(Marker\s+\d+)(\s+\d{2}:\d{2}:\d{2}\.\d+.*)$/;
+            // マーカー行のパターン（数字 + タイムコード）
+            const markerPattern = /^(\s*\d+)(\s+\d{2}:\d{2}:\d{2}\.\d+.*)$/;
 
             lines.forEach(line => {
                 const match = line.match(markerPattern);
+                
                 if (match && nameIndex < nameList.length) {
-                    // マーカー名を置換
+                    // マーカー名を置換（数字部分を置換名に変更）
                     result.push(nameList[nameIndex] + match[2]);
                     nameIndex++;
                 } else {
