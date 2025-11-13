@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marker＊Renamer - RX11マーカー名一括置換ツール</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Yu Gothic UI', 'MS Gothic', sans-serif;
+            background: #e7d0a9;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(to right, #7c5b53, #a0795f);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .header h1 .icon {
+            filter: brightness(0) invert(1);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .main-content {
+            padding: 30px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-section {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .textarea-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 250px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #7c5b53;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .primary-btn {
+            background: #7c5b53;
+            color: white;
+        }
+
+        .primary-btn:hover {
+            background: #8b6a5b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(124, 91, 83, 0.3);
+        }
+
+        .secondary-btn {
+            background: #d4b89b;
+            color: white;
+        }
+
+        .secondary-btn:hover {
+            background: #c4a88b;
+        }
+
+        .success-btn {
+            background: #6b8b5a;
+            color: white;
+        }
+
+        .success-btn:hover {
+            background: #5a7a49;
+        }
+
+        .warning-btn {
+            background: #a87b5a;
+            color: white;
+        }
+
+        .warning-btn:hover {
+            background: #976a49;
+        }
+
+        .danger-btn {
+            background: #b85a6b;
+            color: white;
+        }
+
+        .danger-btn:hover {
+            background: #a74959;
+        }
+
+        .output-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border: 2px solid #c4a88b;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #7c5b53;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            display: none;
+            animation: slideIn 0.3s;
+            z-index: 1000;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            border-left: 4px solid #48c774;
+        }
+
+        .notification.warning {
+            border-left: 4px solid #ff9f43;
+        }
+
+        .notification.error {
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            padding: 10px 20px;
+            background: #7c5b53;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .file-input-label:hover {
+            background: #8b6a5b;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        .help-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            line-height: 1.5;
+        }
+
+        .divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="notification" id="notification"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span class="icon">🎵</span> Marker＊Renamer
+            </h1>
+            <p>iZotope RX11のマーカー名を一括で置換します</p>
+        </div>
+
+        <div class="main-content">
+            <div class="grid-container">
+                <!-- 左側: 元のマーカーデータ -->
+                <div class="input-section">
+                    <div class="section-title">
+                        📝 元のマーカーデータ
+                    </div>
+                    <div class="textarea-container">
+                        <textarea id="inputText" placeholder="マーカーファイルの内容をここに貼り付けるか、下のファイル選択ボタンでファイルを選択してください。
+
+例:
+Marker file version: 1
+Time format: Time
+Marker 1	00:00:03.00000000		
+Marker 2	00:00:07.00000000		
+..."></textarea>
+                        <div class="help-text">
+                            RX11でエクスポートしたマーカーファイル (.txt) の内容を入力します
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右側: 置換する名前リスト -->
+                <div class="input-section">
+                    <div class="section-title">
+                        ✏️ 置換する名前リスト
+                    </div>
+                    <div class="textarea-container">
+                        <textarea id="replacementNames" placeholder="置換する名前を1行に1つずつ入力してください。
+
+例:
+イントロ
+Aメロ1
+Bメロ1
+サビ1
+間奏
+..."></textarea>
+                        <div class="help-text">
+                            マーカーの出現順に名前が置換されます。<br>
+                            行数がマーカー数より少ない場合、残りのマーカーは変更されません。
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 処理ボタン -->
+            <div class="button-group" style="justify-content: center; margin: 20px 0;">
+                <div class="file-input-wrapper">
+                    <input type="file" id="fileInput" accept=".txt">
+                    <label for="fileInput" class="file-input-label" style="font-size: 16px; padding: 12px 30px;">
+                        📁 ファイルを選択
+                    </label>
+                </div>
+                <button class="primary-btn" onclick="processMarkers()" style="font-size: 16px; padding: 12px 30px;">
+                    ⚡ 処理実行
+                </button>
+                <button class="danger-btn" onclick="clearAll()">
+                    🗑️ すべてクリア
+                </button>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- 統計情報 -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value" id="inputMarkerCount">0</div>
+                    <div class="stat-label">入力マーカー数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="nameCount">0</div>
+                    <div class="stat-label">置換名数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="processedCount">0</div>
+                    <div class="stat-label">処理済み</div>
+                </div>
+            </div>
+
+            <!-- 出力セクション -->
+            <div class="output-section">
+                <div class="section-title">
+                    📤 出力結果
+                </div>
+                <textarea id="outputText" placeholder="処理結果がここに表示されます" style="min-height: 300px; margin-top: 10px;"></textarea>
+                
+                <div class="button-group" style="margin-top: 15px;">
+                    <button class="success-btn" onclick="copyToClipboard()">
+                        📋 クリップボードにコピー
+                    </button>
+                    <button class="warning-btn" onclick="downloadResult()">
+                        💾 ファイルとして保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 統計情報を更新
+        function updateStats() {
+            const inputText = document.getElementById('inputText').value;
+            const replacementNames = document.getElementById('replacementNames').value;
+            
+            const markerCount = countMarkers(inputText);
+            const nameCount = replacementNames.split('\n').filter(line => line.trim()).length;
+            
+            document.getElementById('inputMarkerCount').textContent = markerCount;
+            document.getElementById('nameCount').textContent = nameCount;
+        }
+
+        // マーカー数をカウント
+        function countMarkers(text) {
+            const markerPattern = /^Marker\s+\d+\s+\d{2}:\d{2}:\d{2}\.\d+/gm;
+            const matches = text.match(markerPattern);
+            return matches ? matches.length : 0;
+        }
+
+        // ファイル読み込み
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('inputText').value = e.target.result;
+                    updateStats();
+                    showNotification('ファイルを読み込みました', 'success');
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // テキストエリアの入力監視
+        document.getElementById('inputText').addEventListener('input', updateStats);
+        document.getElementById('replacementNames').addEventListener('input', updateStats);
+
+        // マーカー処理
+        function processMarkers() {
+            const inputText = document.getElementById('inputText').value;
+            const replacementNames = document.getElementById('replacementNames').value;
+
+            if (!inputText.trim()) {
+                showNotification('元のマーカーデータを入力してください', 'warning');
+                return;
+            }
+
+            if (!replacementNames.trim()) {
+                showNotification('置換する名前リストを入力してください', 'warning');
+                return;
+            }
+
+            // 置換名リストを配列に変換
+            const nameList = replacementNames.split('\n').filter(line => line.trim());
+            
+            // 入力テキストを行ごとに処理
+            const lines = inputText.split('\n');
+            const result = [];
+            let nameIndex = 0;
+            
+            // マーカー行のパターン
+            const markerPattern = /^(Marker\s+\d+)(\s+\d{2}:\d{2}:\d{2}\.\d+.*)$/;
+
+            lines.forEach(line => {
+                const match = line.match(markerPattern);
+                if (match && nameIndex < nameList.length) {
+                    // マーカー名を置換
+                    result.push(nameList[nameIndex] + match[2]);
+                    nameIndex++;
+                } else {
+                    // マーカー行でない、または置換名が足りない場合はそのまま
+                    result.push(line);
+                }
+            });
+
+            document.getElementById('outputText').value = result.join('\n');
+            document.getElementById('processedCount').textContent = nameIndex;
+
+            // 結果の通知
+            const totalMarkers = countMarkers(inputText);
+            if (nameIndex === totalMarkers) {
+                showNotification(`すべてのマーカー（${nameIndex}個）を置換しました`, 'success');
+            } else if (nameIndex < totalMarkers) {
+                showNotification(`${nameIndex}個のマーカーを置換しました（残り${totalMarkers - nameIndex}個は変更なし）`, 'warning');
+            } else {
+                showNotification(`${nameIndex}個のマーカーを置換しました`, 'success');
+            }
+        }
+
+        // クリア
+        function clearAll() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('replacementNames').value = '';
+            document.getElementById('outputText').value = '';
+            document.getElementById('processedCount').textContent = '0';
+            updateStats();
+            showNotification('すべてクリアしました', 'success');
+        }
+
+        // クリップボードにコピー
+        function copyToClipboard() {
+            const outputText = document.getElementById('outputText').value;
+            if (!outputText) {
+                showNotification('コピーする内容がありません', 'warning');
+                return;
+            }
+
+            navigator.clipboard.writeText(outputText).then(() => {
+                showNotification('クリップボードにコピーしました', 'success');
+            }).catch(() => {
+                // フォールバック
+                const textarea = document.createElement('textarea');
+                textarea.value = outputText;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+                showNotification('クリップボードにコピーしました', 'success');
+            });
+        }
+
+        // ダウンロード
+        function downloadResult() {
+            const outputText = document.getElementById('outputText').value;
+            if (!outputText) {
+                showNotification('保存する内容がありません', 'warning');
+                return;
+            }
+
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `RX11_Markers_${timestamp}.txt`;
+            
+            const blob = new Blob([outputText], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            showNotification(`ファイルを保存しました: ${filename}`, 'success');
+        }
+
+        // 通知表示
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // 初期化
+        updateStats();
+    </script>
+</body>
+</html>
